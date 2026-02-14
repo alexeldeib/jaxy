@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: jaxy-bench-chunks256-cpu16
+  namespace: aeldeib-dev
+  labels:
+    app: jaxy-bench
+    experiment: chunks256-cpu16
+spec:
+  restartPolicy: Never
+  containers:
+    - name: bench
+      image: python:3.12-slim
+      command:
+        - bash
+        - -c
+        - |
+          pip install jax==0.9.0.1 tensorstore==0.1.81 && python /app/main.py
+      env:
+        - name: JAX_PLATFORMS
+          value: cpu
+        - name: BENCH_EXPERIMENT_NAME
+          value: chunks256-cpu16
+        - name: BENCH_CHUNKS_PER_DIM
+          value: "16"
+        - name: BENCH_COMPRESSOR
+          value: none
+        - name: BENCH_ITERATIONS
+          value: "5"
+        - name: TENSORSTORE_HTTP_THREADS
+          value: "32"
+        - name: TENSORSTORE_S3_REQUEST_CONCURRENCY
+          value: "256"
+      envFrom:
+        - secretRef:
+            name: jaxy-aws-creds
+      volumeMounts:
+        - name: script
+          mountPath: /app
+          readOnly: true
+      resources:
+        requests:
+          memory: "32Gi"
+          cpu: "16"
+        limits:
+          memory: "32Gi"
+          cpu: "16"
+  volumes:
+    - name: script
+      configMap:
+        name: jaxy-script

@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: jaxy-bench-gpu-max-parallel
+  namespace: aeldeib-dev
+  labels:
+    app: jaxy-bench
+    experiment: gpu-max-parallel
+spec:
+  restartPolicy: Never
+  containers:
+    - name: bench
+      image: python:3.12-slim
+      command:
+        - bash
+        - -c
+        - |
+          pip install "jax[cuda12]==0.9.0.1" tensorstore==0.1.81 && python /app/main.py
+      env:
+        - name: JAX_PLATFORMS
+          value: cuda
+        - name: BENCH_EXPERIMENT_NAME
+          value: gpu-max-parallel
+        - name: BENCH_CHUNKS_PER_DIM
+          value: "32"
+        - name: BENCH_COMPRESSOR
+          value: none
+        - name: BENCH_ITERATIONS
+          value: "5"
+        - name: TENSORSTORE_HTTP_THREADS
+          value: "64"
+        - name: TENSORSTORE_S3_REQUEST_CONCURRENCY
+          value: "512"
+      envFrom:
+        - secretRef:
+            name: jaxy-aws-creds
+      volumeMounts:
+        - name: script
+          mountPath: /app
+          readOnly: true
+      resources:
+        requests:
+          memory: "64Gi"
+          cpu: "16"
+          nvidia.com/gpu: "1"
+        limits:
+          memory: "64Gi"
+          cpu: "16"
+          nvidia.com/gpu: "1"
+  volumes:
+    - name: script
+      configMap:
+        name: jaxy-script
